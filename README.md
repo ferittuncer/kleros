@@ -29,7 +29,7 @@ truffle test
     - is accepting RPC connections (i.e., "--rpc" option is used in geth)
     - is accessible over the network
     - is properly configured in your Truffle configuration file (truffle.js)
-
+asd
 Make sure `Ganache` is running on the port specified in `truffle.js`
 
 ## Contributing
