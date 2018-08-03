@@ -539,8 +539,8 @@ contract Kleros is Arbitrator, ApproveAndCallFallBack {
     function appeal(uint _disputeID, bytes _extraData) public payable onlyDuring(Period.Appeal) {
         super.appeal(_disputeID,_extraData);
         Dispute storage dispute = disputes[_disputeID];
-        require(msg.value >= appealCost(_disputeID,_extraData));
-        require(dispute.session+dispute.appeals == session); // Dispute of the current session.
+        require(msg.value >= appealCost(_disputeID,_extraData), 'paran yetmez');
+        require(dispute.session+dispute.appeals == session, 'adam misin'); // Dispute of the current session.
 
         dispute.appeals++;
         dispute.votes.length++;

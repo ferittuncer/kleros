@@ -665,4 +665,140 @@ contract('KlerosPOC', function (accounts) {
     await expectThrow(klerosPOC.executeRuling(0, {from: other})) // Should not be executable multiple times.
     assert.equal(payerBalanceBeforeExecution.toNumber() + 0.1e18 + arbitrationFee.toNumber(), payerBalanceAfterExecution.toNumber(), 'The payer has not been refunded.')
   })
+
+  it('Attempt#1: Should return NON_PAYABLE_AMOUNT when maxAppeals exceeded', async () => {
+    let pinakion = await Pinakion.new(0x0, 0x0, 0, 'Pinakion', 18, 'PNK', true, {from: creator})
+    let rng = await ConstantRandom.new(10, {from: creator})
+    let klerosPOC = await KlerosPOC.new(pinakion.address, rng.address, [0, 0, 0, 0, 0], governor, {from: creator})
+    await pinakion.changeController(klerosPOC.address, {from: creator})
+    await klerosPOC.buyPinakion({from: jurorA, value: 0.4e18})
+    await klerosPOC.activateTokens(0.4e18, {from: jurorA})
+    await klerosPOC.buyPinakion({from: jurorB, value: 0.6e18})
+    await klerosPOC.activateTokens(0.6e18, {from: jurorB})
+    await klerosPOC.buyPinakion({from: jurorC, value: 0.5e18})
+    let appealFee = 7 * (await klerosPOC.arbitrationFeePerJuror())
+    let arbitrableTransaction = await ArbitrableTransaction.new(klerosPOC.address, 0x0, 0, payee, 0x0, {from: payer, value: 0.1e18})
+    let arbitrationFee = await klerosPOC.arbitrationCost(0x0, {from: payer})
+    await arbitrableTransaction.payArbitrationFeeByPartyA({from: payer, value: arbitrationFee})
+    await arbitrableTransaction.payArbitrationFeeByPartyB({from: payee, value: arbitrationFee})
+    await klerosPOC.passPeriod({from: other}) // Pass twice to go to vote.
+    await klerosPOC.passPeriod({from: other})
+    await klerosPOC.passPeriod({from: other})
+
+    console.log("Period " + (await klerosPOC.period()).toNumber());
+
+    console.log("No of appeals: " + (await klerosPOC.disputes(0))[2].toNumber())
+    console.log("Dispute state: " + (await klerosPOC.disputes(0))[6].toNumber())
+
+
+    const currentAppeals = (await klerosPOC.disputes(0))[2].toNumber();
+    const maxAppeals = (await klerosPOC.maxAppeals()).toNumber();
+    const periodTypeCount = 5;
+
+    for (let i = currentAppeals; i < 2; i++) {
+      await arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee})
+
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+
+      await klerosPOC.oneShotTokenRepartition(0, {from: other})
+
+      await klerosPOC.passPeriod({from: other})
+
+      await klerosPOC.activateTokens(0.4e18, {from: jurorA})
+      await klerosPOC.activateTokens(0.6e18, {from: jurorB})
+
+      await klerosPOC.passPeriod({from: other})
+      await klerosPOC.passPeriod({from: other})
+
+      let drawA = []
+      let drawB = []
+      for (let i = 1; i <= 3; i++) {
+        if (await klerosPOC.isDrawn(0, jurorA, i)) { drawA.push(i) } else { drawB.push(i) }
+      }
+
+
+      //await klerosPOC.voteRuling(0, 1, drawA, {from: jurorA})
+      //await klerosPOC.voteRuling(0, 1, drawB, {from: jurorB})
+
+      //await klerosPOC.executeRuling(0);
+
+    }
+
+    console.log("Period " + (await klerosPOC.period()).toNumber());
+    console.log("No of appeals: " + (await klerosPOC.disputes(0))[2].toNumber())
+    console.log("Dispute state: " + (await klerosPOC.disputes(0))[6].toNumber())
+
+
+
+
+
+  })
+
+  it.only('Attempt#2: Should return NON_PAYABLE_AMOUNT when maxAppeals exceeded', async () => {
+    let pinakion = await Pinakion.new(0x0, 0x0, 0, 'Pinakion', 18, 'PNK', true, {from: creator})
+    let rng = await ConstantRandom.new(10, {from: creator})
+    let klerosPOC = await KlerosPOC.new(pinakion.address, rng.address, [0, 0, 0, 0, 0], governor, {from: creator})
+
+
+
+    console.log("Period " + (await klerosPOC.period()).toNumber());
+
+    console.log("No of appeals: " + (await klerosPOC.disputes(0))[2].toNumber())
+    console.log("Dispute state: " + (await klerosPOC.disputes(0))[6].toNumber())
+
+
+    const currentAppeals = (await klerosPOC.disputes(0))[2].toNumber();
+    const maxAppeals = (await klerosPOC.maxAppeals()).toNumber();
+    const periodTypeCount = 5;
+
+    for (let i = 0; i < 1; i++) {
+      await pinakion.changeController(klerosPOC.address, {from: creator})
+
+      await klerosPOC.buyPinakion({from: jurorA, value: 0.4e18})
+      await klerosPOC.activateTokens(0.4e18, {from: jurorA})
+      await klerosPOC.buyPinakion({from: jurorB, value: 0.6e18})
+      await klerosPOC.activateTokens(0.6e18, {from: jurorB})
+      await klerosPOC.buyPinakion({from: jurorC, value: 0.5e18})
+      let appealFee = 7 * (await klerosPOC.arbitrationFeePerJuror())
+      let arbitrableTransaction = await ArbitrableTransaction.new(klerosPOC.address, 0x0, 0, payee, 0x0, {from: payer, value: 0.1e18})
+      let arbitrationFee = await klerosPOC.arbitrationCost(0x0, {from: payer})
+      await arbitrableTransaction.payArbitrationFeeByPartyA({from: payer, value: arbitrationFee})
+      await arbitrableTransaction.payArbitrationFeeByPartyB({from: payee, value: arbitrationFee})
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee}))
+      await klerosPOC.passPeriod({from: other}) // Pass twice to go to vote.
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee}))
+      await klerosPOC.passPeriod({from: other})
+
+      let drawAInitial = []
+      let drawBInitial = []
+      for (let i = 1; i <= 3; i++) {
+        if (await klerosPOC.isDrawn(0, jurorA, i)) { drawAInitial.push(i) } else { drawBInitial.push(i) }
+      }
+      // Note that it should work for every case, even if the same juror is drawn thrice.
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee}))
+      await klerosPOC.voteRuling(0, 1, drawAInitial, {from: jurorA})
+      await klerosPOC.voteRuling(0, 2, drawBInitial, {from: jurorB})
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee}))
+      await klerosPOC.passPeriod({from: other}) // Pass once to go to appeal.
+
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee - 100}))
+      await arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee})
+      await expectThrow(arbitrableTransaction.appeal(0x0, {from: payee, value: appealFee}))
+
+    }
+
+    console.log("Period " + (await klerosPOC.period()).toNumber());
+    console.log("No of appeals: " + (await klerosPOC.disputes(0))[2].toNumber())
+    console.log("Dispute state: " + (await klerosPOC.disputes(0))[6].toNumber())
+
+
+
+
+
+  })
 })
